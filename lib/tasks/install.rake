@@ -7,7 +7,7 @@ namespace :redmine do
     task :install => :environment do |t|
       ENV["RAILS_ENV"] ||= "development"
 
-      ['open-uri-cached', holidays', 'icalendar', 'prawn'].each{|gem|
+      ['open-uri/cached', 'holidays', 'icalendar', 'prawn'].each{|gem|
         begin
           require gem
         rescue LoadError
@@ -18,7 +18,7 @@ namespace :redmine do
       batch = (ENV['batch'] == 'true')
       corruption_test = (ENV['corruptiontest'] != 'false')
 
-      redmine_supported = "1.1.2"
+      redmine_supported = "1.1.3"
 
       platform = nil
       version = nil
@@ -27,7 +27,7 @@ namespace :redmine do
 
         platform = :redmine if line.match(/^== Redmine changelog$/)
         
-        m = line.match(/^== 2011-03-07 v([.0-9]+)$/)
+        m = line.match(/^== [0-9]{4}-[0-9]{2}-[0-9]{2} v([.0-9]+)$/)
         version = m[1] if m
       end
 
