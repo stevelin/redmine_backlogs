@@ -1,6 +1,6 @@
 require 'date'
 
-class Task < Issue
+class RbTask < Issue
   unloadable
 
   def self.tracker
@@ -11,13 +11,13 @@ class Task < Issue
 
   def self.create_with_relationships(params, user_id, project_id, is_impediment = false)
     if Issue.const_defined? "SAFE_ATTRIBUTES"
-      attribs = params.clone.delete_if {|k,v| !Task::SAFE_ATTRIBUTES.include?(k) }
+      attribs = params.clone.delete_if {|k,v| !RbTask::SAFE_ATTRIBUTES.include?(k) }
     else
       attribs = params.clone.delete_if {|k,v| !Issue.new.safe_attribute_names.include?(k.to_s) }
     end
     attribs[:remaining_hours] = 0 if IssueStatus.find(params[:status_id]).is_closed?
     attribs['author_id'] = user_id
-    attribs['tracker_id'] = Task.tracker
+    attribs['tracker_id'] = RbTask.tracker
     attribs['project_id'] = project_id
 
     task = new(attribs)
@@ -29,7 +29,7 @@ class Task < Issue
                           end
 
     if valid_relationships && task.save
-      task.move_before params[:next]
+      task.move_before params[:next] unless is_impediment # impediments are not hosted under a single parent, so you can't tree-order them
       task.update_blocked_list params[:blocks].split(/\D+/) if params[:blocks]
     end
 
@@ -46,9 +46,10 @@ class Task < Issue
 
   def self.tasks_for(story_id)
     tasks = []
-    story = Story.find_by_id(story_id)
-    if Story.trackers.include?(story.tracker_id)
+    story = RbStory.find_by_id(story_id)
+    if RbStory.trackers.include?(story.tracker_id)
       story.descendants.each_with_index {|task, i|
+        task = task.becomes(RbTask)
         task.rank = i + 1
         tasks << task 
       }
@@ -58,7 +59,7 @@ class Task < Issue
 
   def update_with_relationships(params, is_impediment = false)
     if Issue.const_defined? "SAFE_ATTRIBUTES"
-      attribs = params.clone.delete_if {|k,v| !Task::SAFE_ATTRIBUTES.include?(k) }
+      attribs = params.clone.delete_if {|k,v| !RbTask::SAFE_ATTRIBUTES.include?(k) }
     else
       attribs = params.clone.delete_if {|k,v| !Issue.new.safe_attribute_names.include?(k.to_s) }
     end
@@ -71,7 +72,7 @@ class Task < Issue
                           end
 
     if valid_relationships && result = journalized_update_attributes!(attribs)
-      move_before params[:next]
+      move_before params[:next] unless is_impediment # impediments are not hosted under a single parent, so you can't tree-order them
       update_blocked_list params[:blocks].split(/\D+/) if params[:blocks]
       result
     else
@@ -126,7 +127,7 @@ class Task < Issue
 
     @rank ||= Issue.count(
       :conditions => ['tracker_id = ? and root_id = ? and lft > ? and lft <= ?',
-                      Task.tracker, s.root_id, s.lft, self.lft])
+                      RbTask.tracker, s.root_id, s.lft, self.lft])
     return @rank
   end
 end

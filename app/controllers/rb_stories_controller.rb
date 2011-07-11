@@ -2,16 +2,10 @@ include RbCommonHelper
 
 class RbStoriesController < RbApplicationController
   unloadable
-  include Cards
+  include BacklogsCards
   
   def index
-    cards = TaskboardCards.new(current_language)
-    
-    if params[:sprint_id]
-      @sprint.stories.each { |story| cards.add(story) }
-    else
-      Story.product_backlog(@project).each { |story| cards.add(story, false) }
-    end
+    cards = Cards.new(params[:sprint_id] ? @sprint.stories : RbStory.product_backlog(@project), params[:sprint_id], current_language)
     
     respond_to do |format|
       format.pdf { send_data(cards.pdf.render, :disposition => 'attachment', :type => 'application/pdf') }
@@ -20,7 +14,7 @@ class RbStoriesController < RbApplicationController
   
   def create
     params['author_id'] = User.current.id
-    story = Story.create_and_position(params)
+    story = RbStory.create_and_position(params)
     status = (story.id ? 200 : 400)
     
     respond_to do |format|
@@ -29,7 +23,7 @@ class RbStoriesController < RbApplicationController
   end
 
   def update
-    story = Story.find(params[:id])
+    story = RbStory.find(params[:id])
     result = story.update_and_position!(params)
     story.reload
     status = (result ? 200 : 400)

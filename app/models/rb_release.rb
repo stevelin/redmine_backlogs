@@ -81,7 +81,9 @@ class ReleaseBurndown
 
 end
 
-class Release < ActiveRecord::Base
+class RbRelease < ActiveRecord::Base
+  set_table_name 'releases'
+
     unloadable
 
     belongs_to :project
@@ -98,7 +100,7 @@ class Release < ActiveRecord::Base
     end
 
     def stories
-        return Story.product_backlog(@project)
+        return RbStory.product_backlog(@project)
     end
 
     def burndown_days

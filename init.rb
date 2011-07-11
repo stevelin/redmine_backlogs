@@ -31,7 +31,8 @@ Redmine::Plugin.register :redmine_backlogs do
   settings :default => { 
                          :story_trackers  => nil, 
                          :task_tracker    => nil, 
-                         :card_spec       => nil 
+                         :card_spec       => nil,
+                         :taskboard_card_order => 'story_follows_tasks'
                        }, 
            :partial => 'shared/settings'
 
@@ -40,7 +41,7 @@ Redmine::Plugin.register :redmine_backlogs do
         
     # Master backlog permissions
     permission :view_master_backlog, { 
-                                       :rb_master_backlogs  => :show,
+                                       :rb_master_backlogs  => [:show, :menu],
                                        :rb_sprints          => [:index, :show],
                                        :rb_wikis            => :show,
                                        :rb_stories          => [:index, :show],
@@ -104,5 +105,5 @@ Redmine::Plugin.register :redmine_backlogs do
 
   menu :project_menu, :rb_master_backlogs, { :controller => :rb_master_backlogs, :action => :show }, :caption => :label_backlogs, :after => :issues, :param => :project_id
   menu :project_menu, :rb_releases, { :controller => :rb_releases, :action => :index }, :caption => :label_release_plural, :after => :rb_master_backlogs, :param => :project_id
-  menu :application_menu, :rb_statistics, { :controller => :rb_statistics, :action => :show}, :caption => :label_scrum_statistics
+  menu :application_menu, :rb_statistics, { :controller => :rb_statistics, :action => :show}, :caption => :label_scrum_statistics, :if => Proc.new {|| User.current.allowed_to?({:controller => :rb_statistics, :action => :show}, nil, :global => true) }
 end
